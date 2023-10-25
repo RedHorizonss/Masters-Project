@@ -1,1 +1,1 @@
-Example overview
+This is the Thesis Project for my Masters project about superconductors and machine learning
