@@ -1,14 +1,39 @@
-\documentclass{article}
-\usepackage{graphicx} % Required for inserting images
+\documentclass[fleqn,10pt]{settings/wlscirep}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[usetitle]{rsc}
+\usepackage{parskip}
+\usepackage{graphicx}
+\usepackage{subcaption}
 
-\title{A Project}
+\renewcommand{\rmdefault}{phv}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\title{Unsupervised Machine Learning Methods Applied on Silicon-Based Lithium Ion Batteries}
 \author{Fay Abu Al Timen}
-\date{October 2023}
-
+\affil{Institut Laue-Langevin Summer Internship \\ University of Bristol \\ School of Chemistry }
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{abstract}
+Abstract \par
+\end{abstract}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{document}
-
+\flushbottom
 \maketitle
+\thispagestyle{empty}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Introduction}
+\section*{Introduction}
+This is where the introduction is.
+This is an exmaple of a refrence \cite{konno_deep_2021}
+
+\section*{Method}
+This is where the coding method goes
+
+\section*{Conclusion}
+Finalize everything
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\bibliographystyle{rsc}
+\bibliography{references}
 
 \end{document}
