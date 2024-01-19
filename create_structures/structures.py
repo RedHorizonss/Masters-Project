@@ -15,6 +15,7 @@ def plotting_struct(structure):
             opacity=0.8
         )
     )])
+    
     fig.update_layout(
         scene=dict(
             xaxis=dict(title='X'),
