@@ -27,7 +27,7 @@ def plotting_struct(structure):
     
 def Structure(a_dist, b_dist, c_dist,
               a_atoms, b_atoms, c_atoms,
-              gamma, alpha, beta,
+              alpha, beta, gamma,
               mid_ab_true, mid_ac_true, body_cetered, tolerance=1e-10
               ):
     
@@ -36,17 +36,17 @@ def Structure(a_dist, b_dist, c_dist,
     for a in range(a_atoms):
         for b in range(b_atoms):
             for c in range(c_atoms):
-                vertices.append([(a * a_dist) + (np.cos(np.deg2rad(180 - gamma)) * b),
-                                 (b * b_dist) + (np.cos(np.deg2rad(180 - alpha)) * c),
-                                 (c * c_dist) + (np.cos(np.deg2rad(180 - beta)) * a)])  
+                vertices.append([(a * a_dist) + (np.cos(np.deg2rad(180 - alpha)) * b),
+                                 (b * b_dist) + (np.cos(np.deg2rad(180 - beta)) * c),
+                                 (c * c_dist) + (np.cos(np.deg2rad(180 - gamma)) * a)])  
                 
     # Adds middle point if its on the side of ab (side of xy)
     if mid_ab_true == True:
         for a in range(a_atoms-1):
             for b in range(b_atoms-1):
                 for c in range(c_atoms):
-                    vertices.append([(a * a_dist) + a_dist/2 + (np.cos(np.deg2rad(180 - gamma)) * b),
-                                     (b * b_dist) + b_dist/2 + (np.cos(np.deg2rad(180 - alpha)) * c),
+                    vertices.append([(a * a_dist) + a_dist/2 + (np.cos(np.deg2rad(180 - alpha)) * b),
+                                     (b * b_dist) + b_dist/2 + (np.cos(np.deg2rad(180 - beta)) * c),
                                      (c * c_dist)])
     
     # Adds middle point if its on the side of ac (side xz)
@@ -54,17 +54,17 @@ def Structure(a_dist, b_dist, c_dist,
         for a in range(a_atoms-1):
             for b in range(b_atoms):
                 for c in range(c_atoms-1):
-                    vertices.append([(a * a_dist) + a_dist/2 + (np.cos(np.deg2rad(180 - gamma)) * b),
+                    vertices.append([(a * a_dist) + a_dist/2 + (np.cos(np.deg2rad(180 - alpha)) * b),
                                      (b * b_dist),
-                                     (c * c_dist) + c_dist/2 + (np.cos(np.deg2rad(180 - beta)) * a)])
+                                     (c * c_dist) + c_dist/2 + (np.cos(np.deg2rad(180 - gamma)) * a)])
                     
     if mid_ac_true == True & mid_ab_true == True:
         for a in range(a_atoms):
             for b in range(b_atoms -1):
                 for c in range(c_atoms-1):
                     vertices.append([(a * a_dist),
-                                     (b * b_dist) + b_dist/2 + (np.cos(np.deg2rad(180 - alpha)) * c),
-                                     (c * c_dist) + c_dist/2 + (np.cos(np.deg2rad(180 - beta)) * a)])
+                                     (b * b_dist) + b_dist/2 + (np.cos(np.deg2rad(180 - beta)) * c),
+                                     (c * c_dist) + c_dist/2 + (np.cos(np.deg2rad(180 - gamma)) * a)])
     
     # Adds middle point in the center of the volume 
     if body_cetered == True:
