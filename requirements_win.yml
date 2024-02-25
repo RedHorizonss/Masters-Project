@@ -1,4 +1,4 @@
-name: tdaf-tf2p7
+name: env_with_pymatgen
 channels:
   - conda-forge
   - defaults
@@ -9,6 +9,7 @@ dependencies:
   - jupyter  
   - rdkit
   - scikit-learn
+  - pymatgen
   - pip
   - pip:
     - giotto-tda
