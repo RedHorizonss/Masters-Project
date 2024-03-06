@@ -1,6 +1,16 @@
 import numpy as np
 import plotly.graph_objs as go
+
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import f1_score, precision_score, recall_score
+from sklearn.pipeline import make_union, Pipeline
+
 from gtda.homology import VietorisRipsPersistence
+from gtda.diagrams import PersistenceEntropy
+from gtda.diagrams import NumberOfPoints
+from gtda.diagrams import Amplitude
+
+import os
 
 class BravaisLattice():
     def __init__(self, a_dist, b_dist, c_dist, alpha, beta, gamma, mid_ab_true = False, mid_ac_true = False, body_centered = False, name = "lattice"):
@@ -17,6 +27,7 @@ class BravaisLattice():
         self.all_faces = mid_ab_true and mid_ac_true
         
         self.unit_cell = self.get_coords(2)
+        self.name = name
         
     def get_unit_cell(self):
         return self.unit_cell
@@ -47,7 +58,7 @@ class BravaisLattice():
                                         (c * self.c_dist)])
         
         # Adds middle point if its on the side of ac (side xz)
-        if self.mid_ab == True:
+        if self.mid_ac == True:
             for a in range(a_atoms-1):
                 for b in range(b_atoms):
                     for c in range(c_atoms-1):
@@ -117,7 +128,7 @@ class BravaisLattice():
                 showlegend=False
             ))
 
-    def draw_fancy_unitcell(self, show = True, location_to_save = None, fig_height = 1200, fig_width = 1500):
+    def draw_fancy_unitcell(self, show = True, save_image = False, fig_height = 1200, fig_width = 1500):
         if self.gamma == 120 and self.alpha == 90 and self.beta == 90:
             # need to switch things to make it look pretty
             self.gamma = 90
@@ -211,55 +222,113 @@ class BravaisLattice():
         )
         if show:
             fig.show()
-        if location_to_save is not None:
-            fig.write_image(f"{location_to_save}.png")
+        if save_image:
+            if not os.path.exists("lattice_images"):
+                os.mkdir("lattice_images")
+            fig.write_image(f"lattice_images/{self.name}.png")
 
 class PresistentHomologyFeatures():
-    def __init__(self, coords):
-        self.coords = coords
-        self.diagrams_basic = self.compute_persistence_diagrams()
+    def __init__(self, coords, name = "structure"):
+        if isinstance(coords, list):
+            self.list_of_coords = coords
+        if isinstance(coords, np.ndarray):
+            self.coords = coords
+            self.diagrams_basic = self.compute_persistence_diagrams()
+        self.name = name
         
-    def compute_persistence_diagrams(self):
-        # Track connected components, loops, and voids
+    def compute_persistence_diagrams(self, coords = None, n_jobs = 1):
+        # Track H0, H1, H2: connections, 1d voids and 2d voids
         homology_dimensions = [0, 1, 2]
 
-        # Collapse edges to speed up H2 persistence calculation!
+        # Collapse edges to speed up H2 persistence calculation
         persistence = VietorisRipsPersistence(
             metric="euclidean",
             homology_dimensions=homology_dimensions,
-            n_jobs=1,
+            n_jobs= n_jobs,
             collapse_edges=True,
         )
         
-        reshaped_coords=self.coords[None, :, :]
+        # If no coords are given, use the ones from the class
+        if coords is not None:
+            reshaped_coords=coords[None, :, :]
+        else:
+            reshaped_coords=self.coords[None, :, :]
+        
         diagrams_basic = persistence.fit_transform(reshaped_coords)
         return diagrams_basic
+    
+    def make_pipeline(self):
+
+        metrics = [
+            {"metric": metric}
+            for metric in ["bottleneck", "wasserstein", "landscape", "persistence_image"]
+        ]
+
+        # Concatenate to generate 3 + 3 + (4 x 3) = 18 topological features
+        feature_union = make_union(
+            PersistenceEntropy(normalize=True),
+            NumberOfPoints(n_jobs=1),
+            *[Amplitude(**metric, n_jobs=1) for metric in metrics]
+        )
+
+        ## then we use a pipeline to transform, the data and spit i out
+        # mwah hahahahaha
+        pipe = Pipeline(
+            [
+                ("features", feature_union)
+            ]
+        )
+            
+        return pipe
+
+    def featurising_coords(self):
+        topol_feat_list = []
+        pipe = self.make_pipeline()
+
+        for coordinates in self.list_of_coords:
+            diagrams_basic = self.compute_persistence_diagrams(coordinates)
+            X_basic = pipe.fit_transform(diagrams_basic)
+            # topology feat list stores the topological features for each structure
+            topol_feat_list.append([x for x in X_basic[0]])
         
-    def plot_presistent_diagrams(self, shift_annotation_x, shift_annotation_y):
+        # topol feat mat is a matrix of topological features
+        topol_feat_mat = np.array(topol_feat_list)
+        
+        return topol_feat_mat, topol_feat_list
+    
+    def diagram_manipulation(self):
         diagram = self.diagrams_basic[0]
         
-        homology_dimensions = np.unique(diagram[:,2])
-
         birth_death_pairs = diagram[diagram[:, 0] != diagram[:, 1]]
-
         no_homology_pairs = birth_death_pairs[:,:2]
-
+        
         posinfinite_mask = np.isposinf(no_homology_pairs)
         neginfinite_mask = np.isneginf(no_homology_pairs)
-            
+        
         max_val = np.max(np.where(posinfinite_mask, -np.inf, no_homology_pairs))
         min_val = np.min(np.where(neginfinite_mask, np.inf, no_homology_pairs))
-
+        
+        return diagram, birth_death_pairs, max_val, min_val
+        
+    def plot_presistent_diagrams(self, 
+                                 show = True,
+                                 save_image = False,
+                                 shift_annotation_x = [[25, 25, 25],[25,25,25],[25]], 
+                                 shift_annotation_y = [[17, 17,17],[17, 17,17],[17]]):
+        diagram, birth_death_pairs, max_val, min_val = self.diagram_manipulation()
+        
+        homology_dimensions = np.unique(diagram[:,2])
+        
         extra_space = 0.02 * (max_val - min_val)
         min_val_display = min_val - extra_space
-        max_val_display = max_val + extra_space
+        max_val_display = max_val + extra_space+0.1
 
         dotted_line = [[min_val_display, max_val_display], [min_val_display, max_val_display]]
 
         fig = go.Figure()
 
         # Add the scatter plot for each dimension
-        for dim in homology_dimensions:
+        for index, dim in enumerate(homology_dimensions):
             subdiagram = birth_death_pairs[birth_death_pairs[:,2] == dim]
             unique, counts = np.unique(subdiagram, axis=0, return_counts=True)
             
@@ -282,16 +351,19 @@ class PresistentHomologyFeatures():
                 name=r'$H_{}$'.format(int(dim))
             ))
             
+            shift_ann_x = shift_annotation_x[index]
+            shift_ann_y = shift_annotation_y[index]
+            
             for i in range(len(counts)):
-                annotation = f"multiplicity: {counts[i]}"
+                annotation = f"m = {counts[i]}"
                 fig.add_annotation(
                     x=x[i],
                     y=y[i], 
                     text=annotation,
                     showarrow=False,
                     arrowhead=1,
-                    xshift=shift_annotation_x,
-                    yshift=shift_annotation_y,
+                    xshift=shift_ann_x[i],
+                    yshift=shift_ann_y[i],
                      font=dict(
                          size=16,
                          color="black"
@@ -334,37 +406,35 @@ class PresistentHomologyFeatures():
             plot_bgcolor='white',
             paper_bgcolor='white',
             legend=dict(
-                x=0,
-                y=1,
+                x=0.6,
+                y=0.2,
+                traceorder="normal",
                 bgcolor='rgba(0,0,0,0)',
-                font=dict(size=16)
+                font=dict(size=16,
+                          color="black",
+                          family="sans-serif"
+                         ),
+                )
             )
-        )
         
         fig.update_xaxes(showline=True, linewidth=2, linecolor='black', range=[min_val_display, max_val_display])
         fig.update_yaxes(showline=True, linewidth=2, linecolor='black', range=[min_val_display, max_val_display])
                 
-        fig.show()
+        if show:
+            fig.show()
+        if save_image:
+            if not os.path.exists("PHF_images"):
+                os.mkdir("PHF_images")
+            fig.write_image(f"PHF_images/{self.name}.png")
         
-    def plot_barcode_plots(self):
-        # Assuming diagrams_basic is defined elsewhere
-        diagram = self.diagrams_basic[0]
+    def plot_barcode_plots(self, show = True, save_image = False,):
+        _, birth_death_pairs, max_val, min_val = self.diagram_manipulation()
 
-        # Extracting necessary data
-        birth_death_pairs = diagram[diagram[:, 0] != diagram[:, 1]]
         x_left = birth_death_pairs[:, 0]
         x_right = birth_death_pairs[:, 1]
+        
         homology_dimensions = birth_death_pairs[:, 2]
         
-        no_homology_pairs = birth_death_pairs[:,:2]
-
-        posinfinite_mask = np.isposinf(no_homology_pairs)
-        neginfinite_mask = np.isneginf(no_homology_pairs)
-            
-        max_val = np.max(np.where(posinfinite_mask, -np.inf, no_homology_pairs))
-        min_val = np.min(np.where(neginfinite_mask, np.inf, no_homology_pairs))
-
-
         # Setting up colors for different homology dimensions
         colors = {0: 'rgb(53, 183, 121)', 1: 'rgb(49, 104, 142)', 2: 'rgb(68, 1, 84)'}
 
@@ -414,11 +484,9 @@ class PresistentHomologyFeatures():
                 traceorder="normal",
                 font=dict(
                     family="sans-serif",
-                    size=14,
+                    size=16,
                     color="black"
                 ),
-                bordercolor="Black",
-                borderwidth=2
             )
         )
 
@@ -427,6 +495,10 @@ class PresistentHomologyFeatures():
         fig.update_xaxes(showline=True, linewidth=2, linecolor='black', range=[min_val, max_val])
         fig.update_yaxes(showline=True, linewidth=2, linecolor='black')
 
-        # Displaying the figure
-        fig.show()
+        if show:
+            fig.show()
+        if save_image:
+            if not os.path.exists("barcode_images"):
+                os.mkdir("barcode_images")
+            fig.write_image(f"barcode_images/{self.name}.png")
 
