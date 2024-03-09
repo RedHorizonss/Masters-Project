@@ -315,6 +315,7 @@ class PresistentHomologyFeatures():
                                  save_image = False,
                                  shift_annotation_x = [[25, 25, 25],[25,25,25],[25]], 
                                  shift_annotation_y = [[17, 17,17],[17, 17,17],[17]]):
+        
         diagram, birth_death_pairs, max_val, min_val = self.diagram_manipulation()
         
         homology_dimensions = np.unique(diagram[:,2])
@@ -365,7 +366,7 @@ class PresistentHomologyFeatures():
                     xshift=shift_ann_x[i],
                     yshift=shift_ann_y[i],
                      font=dict(
-                         size=16,
+                         size=18,
                          color="black"
                         )
                 )
@@ -386,36 +387,38 @@ class PresistentHomologyFeatures():
         fig.update_layout(
             xaxis=dict(
                 title='Birth',
-                title_font=dict(size=16),
-                tickfont=dict(size=16), 
+                title_font=dict(size=20),
+                tickfont=dict(size=18), 
                 tickmode = 'linear',
                 dtick=round(max_val - min_val) / 5, 
                 tickformat=".1f"
             ),
             yaxis=dict(
                 title='Death',
-                title_font=dict(size=16),
-                tickfont=dict(size=16), 
+                title_font=dict(size=20),
+                tickfont=dict(size=18), 
                 tickmode = 'linear',
                 dtick=round(max_val - min_val) / 5, 
                 tickformat=".1f"
             ),
             showlegend=True,
-            width=600,
-            height=600,
+            width=500,
+            height=500,
             plot_bgcolor='white',
             paper_bgcolor='white',
-            legend=dict(
-                x=0.6,
+            legend=go.layout.Legend(
+                itemsizing='constant',
+                x = 0.6,
                 y=0.2,
                 traceorder="normal",
                 bgcolor='rgba(0,0,0,0)',
-                font=dict(size=16,
-                          color="black",
-                          family="sans-serif"
-                         ),
-                )
+                font=dict(
+                    family="Helvetica",
+                    size=18,
+                    color="black",
+                ),
             )
+        )
         
         fig.update_xaxes(showline=True, linewidth=2, linecolor='black', range=[min_val_display, max_val_display])
         fig.update_yaxes(showline=True, linewidth=2, linecolor='black', range=[min_val_display, max_val_display])
@@ -464,8 +467,8 @@ class PresistentHomologyFeatures():
         layout = go.Layout(
             xaxis=dict(
                 title='Filter / Å',
-                title_font=dict(size=16),
-                tickfont=dict(size=16), 
+                title_font=dict(size=20),
+                tickfont=dict(size=18), 
                 tickmode='linear',
                 dtick=round(max_val - min_val) / 5,  # Set tick intervals based on data range
                 tickformat=".1f"
@@ -474,25 +477,26 @@ class PresistentHomologyFeatures():
                 title='',
                 showticklabels=False,
             ),
-            width=600,
-            height=600,
+            width=500,
+            height=500,
             plot_bgcolor='white',
             paper_bgcolor='white',
-            legend=dict(
-                x=1.02,
+            legend=go.layout.Legend(
+                itemsizing='constant',
+                x = 1.02,
                 y=1,
-                traceorder="normal",
                 font=dict(
-                    family="sans-serif",
-                    size=16,
-                    color="black"
+                    family="Helvetica",
+                    size=30,
+                    color="black",
                 ),
             )
         )
+        
 
         # Creating figure
         fig = go.Figure(data=traces, layout=layout)
-        fig.update_xaxes(showline=True, linewidth=2, linecolor='black', range=[min_val, max_val])
+        fig.update_xaxes(showline=True, linewidth=2, linecolor='black', range=[min_val, max_val], title_font_family="Helvetica")
         fig.update_yaxes(showline=True, linewidth=2, linecolor='black')
 
         if show:
