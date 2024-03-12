@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import plotly.graph_objs as go
 
@@ -5,12 +6,15 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score, precision_score, recall_score
 from sklearn.pipeline import make_union, Pipeline
 
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+
 from gtda.homology import VietorisRipsPersistence
 from gtda.diagrams import PersistenceEntropy
 from gtda.diagrams import NumberOfPoints
 from gtda.diagrams import Amplitude
 
-import os
 
 class BravaisLattice():
     def __init__(self, a_dist, b_dist, c_dist, alpha, beta, gamma, mid_ab_true = False, mid_ac_true = False, body_centered = False, name = "lattice"):
@@ -349,7 +353,8 @@ class PresistentHomologyFeatures():
                     color=col,
                     size=12
                 ),
-                name=r'$H_{}$'.format(int(dim))
+                name=r'$\large{{H_{}}}$'.format(int(dim))
+                
             ))
             
             shift_ann_x = shift_annotation_x[index]
@@ -391,7 +396,10 @@ class PresistentHomologyFeatures():
                 tickfont=dict(size=18), 
                 tickmode = 'linear',
                 dtick=round(max_val - min_val) / 5, 
-                tickformat=".1f"
+                tickformat=".1f",
+                ticks="outside",
+                ticklen=5,
+                tickwidth=2,
             ),
             yaxis=dict(
                 title='Death',
@@ -399,8 +407,17 @@ class PresistentHomologyFeatures():
                 tickfont=dict(size=18), 
                 tickmode = 'linear',
                 dtick=round(max_val - min_val) / 5, 
-                tickformat=".1f"
+                tickformat=".1f",
+                ticks="outside",
+                ticklen=5,
+                tickwidth=2,
             ),
+            font=dict(
+                family="Helvetica",
+                size=18,
+                color="black",
+            ),
+            margin=dict(l=10, r=10, b=10, t=10),
             showlegend=True,
             width=500,
             height=500,
@@ -409,14 +426,10 @@ class PresistentHomologyFeatures():
             legend=go.layout.Legend(
                 itemsizing='constant',
                 x = 0.6,
-                y=0.2,
+                y = 0.2,
                 traceorder="normal",
                 bgcolor='rgba(0,0,0,0)',
-                font=dict(
-                    family="Helvetica",
-                    size=18,
-                    color="black",
-                ),
+                font=dict(size= 20)
             )
         )
         
@@ -451,7 +464,7 @@ class PresistentHomologyFeatures():
                     y=[-i, -i],
                     mode='lines',
                     line=dict(color=colors[dim], width=2),
-                    name=r'$\beta_{}$'.format(int(dim))
+                    name=r'$\Large{{\beta_{}}}$'.format(int(dim))
                 ))
                 legend_items.add(dim)  # Add the legend item to the set
             else:  # Add the line without a legend item
@@ -471,12 +484,21 @@ class PresistentHomologyFeatures():
                 tickfont=dict(size=18), 
                 tickmode='linear',
                 dtick=round(max_val - min_val) / 5,  # Set tick intervals based on data range
-                tickformat=".1f"
+                tickformat=".1f",
+                ticks="inside",
+                ticklen=5,
+                tickwidth=2,
             ),
             yaxis=dict(
-                title='',
+                title='Multiplicity',
                 showticklabels=False,
             ),
+            font=dict(
+                family="Helvetica",
+                size=18,
+                color="black",
+            ),
+            margin=dict(l=10, r=10, b=10, t=10),
             width=500,
             height=500,
             plot_bgcolor='white',
@@ -485,11 +507,7 @@ class PresistentHomologyFeatures():
                 itemsizing='constant',
                 x = 1.02,
                 y=1,
-                font=dict(
-                    family="Helvetica",
-                    size=30,
-                    color="black",
-                ),
+                font=dict(size= 20)
             )
         )
         
@@ -505,4 +523,3 @@ class PresistentHomologyFeatures():
             if not os.path.exists("barcode_images"):
                 os.mkdir("barcode_images")
             fig.write_image(f"barcode_images/{self.name}.png")
-
