@@ -10,6 +10,7 @@ dependencies:
   - rdkit
   - scikit-learn
   - pymatgen
+  - chemparse
   - pip
   - pip:
     - giotto-tda
