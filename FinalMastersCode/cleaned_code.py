@@ -15,7 +15,6 @@ from gtda.diagrams import PersistenceEntropy
 from gtda.diagrams import NumberOfPoints
 from gtda.diagrams import Amplitude
 
-
 class BravaisLattice():
     def __init__(self, a_dist, b_dist, c_dist, alpha, beta, gamma, mid_ab_true = False, mid_ac_true = False, body_centered = False, name = "lattice"):
         self.a_dist = a_dist
@@ -301,14 +300,18 @@ class PresistentHomologyFeatures():
         return topol_feat_mat, topol_feat_list
     
     def diagram_manipulation(self):
+        # Extracts the first diagram
         diagram = self.diagrams_basic[0]
         
+        # Extracts the birth-death pairs
         birth_death_pairs = diagram[diagram[:, 0] != diagram[:, 1]]
         no_homology_pairs = birth_death_pairs[:,:2]
         
+        #removes any infinite values
         posinfinite_mask = np.isposinf(no_homology_pairs)
         neginfinite_mask = np.isneginf(no_homology_pairs)
         
+        # Replaces infinite values with max and min values
         max_val = np.max(np.where(posinfinite_mask, -np.inf, no_homology_pairs))
         min_val = np.min(np.where(neginfinite_mask, np.inf, no_homology_pairs))
         
