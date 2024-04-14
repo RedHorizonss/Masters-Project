@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score, precision_score, recall_score
 from sklearn.pipeline import make_union, Pipeline
 
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.metrics import confusion_matrix, accuracy_score
 
@@ -529,28 +529,43 @@ class PresistentHomologyFeatures():
             fig.write_image(f"barcode_images/{self.name}.png")
             
 class randomforests():
-    def __init__(self, df, features, target, test_size = 0.2, random_state = 42, name = "model"):
+    def __init__(self, df, features, target, test_size = 0.2, random_state = 42, name = "model", stratify = False):
         self.df = df
         self.features = features
         self.target = target
         self.test_size = test_size
         self.random_state = random_state
         self.name = name
-        
+        self.stratify = stratify
         self.X_train, self.X_test, self.y_train, self.y_test = self.split_data()
         
     def split_data(self):
         X = self.df[self.features]
         y = self.df[self.target]
         
-        X_train, X_test, y_train, y_test = train_test_split(X, y, 
-                                                            test_size=self.test_size, random_state=self.random_state,
-                                                            stratify=y)
+        if self.stratify:
+            X_train, X_test, y_train, y_test = train_test_split(X, y, 
+                                                                test_size=self.test_size, random_state=self.random_state,
+                                                                stratify= y)
+        else:
+            X_train, X_test, y_train, y_test = train_test_split(X, y, 
+                                                                test_size=self.test_size, random_state=self.random_state)
         
         return X_train, X_test, y_train, y_test
     
     def train_classifier_model(self, n_estimators = 100,  max_depth=5, min_samples_leaf=1, min_samples_split=2):
         rf = RandomForestClassifier(n_estimators=n_estimators,
+                                    max_depth=max_depth, 
+                                    min_samples_leaf=min_samples_leaf,
+                                    min_samples_split=min_samples_split,
+                                    random_state=self.random_state)
+        
+        rf.fit(self.X_train, self.y_train)
+        
+        return rf
+    
+    def train_regressor_model(self, n_estimators = 100,  max_depth=5, min_samples_leaf=1, min_samples_split=2):
+        rf = RandomForestRegressor(n_estimators=n_estimators,
                                     max_depth=max_depth, 
                                     min_samples_leaf=min_samples_leaf,
                                     min_samples_split=min_samples_split,
