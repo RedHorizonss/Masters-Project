@@ -526,3 +526,23 @@ class PresistentHomologyFeatures():
             if not os.path.exists("barcode_images"):
                 os.mkdir("barcode_images")
             fig.write_image(f"barcode_images/{self.name}.png")
+            
+
+class randomforests():
+    def __init__(self, df, features, target, test_size = 0.2):
+        self.df = df
+        self.features = features
+        self.target = target
+        self.test_size = test_size
+        
+        self.X_train, self.X_test, self.y_train, self.y_test = self.split_data()
+        
+    def split_data(self):
+        X = self.df[self.features]
+        y = self.df[self.target]
+        
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=self.test_size)
+        
+        return X_train, X_test, y_train, y_test
+    
+    
