@@ -445,7 +445,7 @@ class PresistentHomologyFeatures():
         if save_image:
             if not os.path.exists("PHF_images"):
                 os.mkdir("PHF_images")
-            fig.write_image(f"PHF_images/{self.name}.png")
+            fig.write_image(f"PHF_images/{self.name}.png", width=500, height=500, scale=3)
         
     def plot_barcode_plots(self, show = True, save_image = False,):
         _, birth_death_pairs, max_val, min_val = self.diagram_manipulation()
@@ -526,7 +526,7 @@ class PresistentHomologyFeatures():
         if save_image:
             if not os.path.exists("barcode_images"):
                 os.mkdir("barcode_images")
-            fig.write_image(f"barcode_images/{self.name}.png")
+            fig.write_image(f"barcode_images/{self.name}.png", width=500, height=500, scale=3)
             
 class randomforests():
     def __init__(self, df, features, target, test_size = 0.2, random_state = 42, name = "model", stratify = False):
@@ -598,7 +598,7 @@ class randomforests():
                              colorscale='Viridis',
                              text=conf_matrix,
                              texttemplate="%{text}",
-                             textfont={"size":18})
+                             textfont={"size":22})
 
         layout = go.Layout(
             xaxis=dict(title='Predicted Class'),
@@ -607,7 +607,7 @@ class randomforests():
             height=height,
             plot_bgcolor='white',
             paper_bgcolor='white',
-            font=dict(family='Helvetica', size=22, color='black'),
+            font=dict(family='Helvetica', size=24, color='black'),
             margin=dict(l=5, r=5, b=5, t=10))
 
         # Create the figure
@@ -618,7 +618,7 @@ class randomforests():
         if save_image:
             if not os.path.exists("plots"):
                 os.mkdir("plots")
-            fig.write_image(f"plots/conf_matrix_{self.name}.png")
+            fig.write_image(f"plots/conf_matrix_{self.name}.png", width=width, height=height, scale=3)
             
     def plot_feature_importance(self, importances ,show = True, save_image = False, width = 800, height = 600):
         # Get the feature names
@@ -662,7 +662,7 @@ class randomforests():
             height=height,
             plot_bgcolor='white',
             paper_bgcolor='white',
-            font=dict(family='Helvetica', size=22, color='black'),
+            font=dict(family='Helvetica', size=24, color='black'),
             margin=dict(l=10, r=10, b=10, t=10),
             showlegend=False,
             )
@@ -672,5 +672,5 @@ class randomforests():
         if save_image:
             if not os.path.exists("plots"):
                 os.mkdir("plots")
-            fig.write_image(f"plots/feature_importance_{self.name}.png")
+            fig.write_image(f"plots/feature_importance_{self.name}.png", width=width, height=height, scale=3)
     
