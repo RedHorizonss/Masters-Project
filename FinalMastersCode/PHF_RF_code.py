@@ -8,7 +8,7 @@ from sklearn.pipeline import make_union, Pipeline
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+from sklearn.metrics import confusion_matrix, accuracy_score
 
 from gtda.homology import VietorisRipsPersistence
 from gtda.diagrams import PersistenceEntropy
@@ -529,11 +529,13 @@ class PresistentHomologyFeatures():
             
 
 class randomforests():
-    def __init__(self, df, features, target, test_size = 0.2):
+    def __init__(self, df, features, target, test_size = 0.2, random_state = 42, name = "model"):
         self.df = df
         self.features = features
         self.target = target
         self.test_size = test_size
+        self.random_state = random_state
+        self.name = name
         
         self.X_train, self.X_test, self.y_train, self.y_test = self.split_data()
         
@@ -541,8 +543,117 @@ class randomforests():
         X = self.df[self.features]
         y = self.df[self.target]
         
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=self.test_size)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=self.test_size, random_state=self.random_state)
         
         return X_train, X_test, y_train, y_test
     
+    def train_classifier_model(self, n_estimators = 100,  max_depth=5, min_samples_leaf=1, min_samples_split=2):
+        rf = RandomForestClassifier(n_estimators=n_estimators,
+                                    max_depth=max_depth, 
+                                    min_samples_leaf=min_samples_leaf,
+                                    min_samples_split=min_samples_split,
+                                    random_state=self.random_state)
+        
+        rf.fit(self.X_train, self.y_train)
+        
+        return rf
+    
+    def evaluate_classifier_model(self, model):
+        y_pred = model.predict(self.X_test)
+        
+        accuracy = accuracy_score(self.y_test, y_pred)
+        f1 = f1_score(self.y_test, y_pred, average='weighted')
+        precision = precision_score(self.y_test, y_pred, average='weighted')
+        recall = recall_score(self.y_test, y_pred, average='weighted')
+        conf_matrix = confusion_matrix(self.y_test, y_pred)
+        
+        return accuracy, f1, precision, recall, conf_matrix
+    
+    def calc_cross_val_score(self, model, cv = 5, scoring = 'accuracy'):
+        scores = cross_val_score(model, self.X_train, self.y_train, cv=cv, scoring=scoring)
+        
+        return scores
+    
+    def plot_confusion_matrix(self, target_names, conf_matrix, show = True, save_image = False, width = 800, height = 600):
+        heatmap = go.Heatmap(z=conf_matrix,
+                             x=target_names,
+                             y=target_names,
+                             colorscale='Viridis',
+                             text=conf_matrix,
+                             texttemplate="%{text}",
+                             textfont={"size":18})
+
+        layout = go.Layout(
+            xaxis=dict(title='Predicted Class'),
+            yaxis=dict(title='True Class'),
+            width=width,
+            height=height,
+            plot_bgcolor='white',
+            paper_bgcolor='white',
+            font=dict(family='Helvetica', size=22, color='black'),
+            margin=dict(l=5, r=5, b=5, t=10))
+
+        # Create the figure
+        fig = go.Figure(data=[heatmap], layout=layout)
+        
+        if show:
+            fig.show()
+        if save_image:
+            if not os.path.exists("plots"):
+                os.mkdir("plots")
+            fig.write_image(f"plots/conf_matrix_{self.name}.png")
+            
+    def plot_feature_importance(self, importances ,show = True, save_image = False, width = 800, height = 600):
+        # Get the feature names
+        feature_names = [name.replace('_', ' ') for name in self.features]
+
+        # Sort the feature importances in descending order
+        indices = np.argsort(importances)[::-1]
+
+        # Create the bar plot
+        fig = go.Figure(data=go.Bar(
+            x=[feature_names[i] for i in indices],
+            y=importances[indices],
+            marker_color='rgb(33, 145, 140)', 
+            text= [f'{x:.2f}' for x in importances[indices]],
+            textposition='auto',
+        ))
+
+        # Set the layout
+        fig.update_layout(
+            xaxis=dict(
+                title="Features",
+                showline=True,
+                linewidth=5,
+                linecolor='black',
+                ticks='outside',
+                tickson = "boundaries",
+                tickwidth=3,
+                ticklen=5
+            ),
+            yaxis=dict(
+                title="Feature Importance",
+                showline=True,
+                linewidth=5,
+                linecolor='black',
+                ticks='inside',
+                tickwidth=3,
+                ticklen=5
+            ),
+            barmode='group',
+            width=width,
+            height=height,
+            plot_bgcolor='white',
+            paper_bgcolor='white',
+            font=dict(family='Helvetica', size=22, color='black'),
+            margin=dict(l=10, r=10, b=10, t=10),
+            showlegend=False,
+            )
+        
+        if show:
+            fig.show()
+        if save_image:
+            if not os.path.exists("plots"):
+                os.mkdir("plots")
+            fig.write_image(f"plots/feature_importance_{self.name}.png")
     
