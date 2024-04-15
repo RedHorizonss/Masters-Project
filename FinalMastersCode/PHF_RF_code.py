@@ -2,14 +2,15 @@ import os
 import numpy as np
 import pandas as pd
 import plotly.graph_objs as go
+import plotly.express as px
 
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score, precision_score, recall_score
 from sklearn.pipeline import make_union, Pipeline
 
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.metrics import confusion_matrix, accuracy_score
+from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
+from sklearn.metrics import confusion_matrix, accuracy_score, mean_absolute_error, mean_squared_error, r2_score
 
 from gtda.homology import VietorisRipsPersistence
 from gtda.diagrams import PersistenceEntropy
@@ -574,6 +575,29 @@ class randomforests():
         rf.fit(self.X_train, self.y_train)
         
         return rf
+
+    def train_regressor_model_grid_search(self, cv = 10, scoring = 'neg_mean_squared_error',
+                                          param_grid = {
+                                              'n_estimators': [50, 100, 150],
+                                              'max_depth': [None, 10, 20],
+                                              'min_samples_split': [2, 5, 10],
+                                              'min_samples_leaf': [1, 2, 4],
+                                              'max_features': ['log2', 'sqrt']}):
+        
+        rf = RandomForestRegressor(random_state=self.random_state)
+        grid_search = GridSearchCV(rf, param_grid, cv=cv, scoring=scoring)
+        grid_search.fit(self.X_train, self.y_train)
+        
+        return grid_search.best_estimator_, grid_search.best_params_
+    
+    def evaluate_regressor_model(self, model):
+        y_pred = model.predict(self.X_test)
+        
+        mae = mean_absolute_error(self.y_test, y_pred)
+        mse = mean_squared_error(self.y_test, y_pred)
+        r2 = r2_score(self.y_test, y_pred)
+        
+        return mae, mse, r2
     
     def evaluate_classifier_model(self, model):
         y_pred = model.predict(self.X_test)
@@ -673,4 +697,4 @@ class randomforests():
             if not os.path.exists("plots"):
                 os.mkdir("plots")
             fig.write_image(f"plots/feature_importance_{self.name}.png", width=width, height=height, scale=3)
-    
+            
