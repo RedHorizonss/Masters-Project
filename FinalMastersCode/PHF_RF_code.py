@@ -18,7 +18,22 @@ from gtda.diagrams import NumberOfPoints
 from gtda.diagrams import Amplitude
 
 class BravaisLattice():
+    """Class to create a Bravais Lattices"""
     def __init__(self, a_dist, b_dist, c_dist, alpha, beta, gamma, mid_ab_true = False, mid_ac_true = False, body_centered = False, name = "lattice"):
+        """Initialises the Bravais Lattice
+
+        Args:
+            a_dist (float): distance between atoms in the a direction (x axis)
+            b_dist (float): distance between atoms in the b direction (y axis)
+            c_dist (float): distance between atoms in the c direction (z axis)
+            alpha (float): angle between b and c
+            beta (float): angle between a and c
+            gamma (float): angle between a and b
+            mid_ab_true (boolean, optional): If a lattice point is found on face with lengths a and b. Defaults to False.
+            mid_ac_true (boolean, optional): If a lattice point is found on face with lengths a and c. Defaults to False.
+            body_centered (boolean, optional): If a lattice point is found in the body of the lattice. Defaults to False.
+            name (string, optional): Name of files to be saved as. Defaults to "lattice".
+        """
         self.a_dist = a_dist
         self.b_dist = b_dist
         self.c_dist = c_dist
@@ -35,9 +50,23 @@ class BravaisLattice():
         self.name = name
         
     def get_unit_cell(self):
+        """runs the get_coords function to get the unit cell
+
+        Returns:
+            np.array: unit cell coordinates
+        """
         return self.unit_cell
     
     def get_coords(self, num_atoms):
+        """provides the cooordinates of the lattice
+
+        Args:
+            num_atoms (int or list of ints): number of atoms in the lattice. 
+            If a list is given, the first element is the number of atoms in the a direction, the second in the b direction and the third in the c direction
+
+        Returns:
+            np.array: coordinates of the lattice
+        """
         tolerance = 1e-10
         
         if isinstance(num_atoms, list):
@@ -94,6 +123,11 @@ class BravaisLattice():
         return vertices
     
     def plotting_struct(self, coords = None):
+        """plots the structure of the lattice
+
+        Args:
+            coords (np.array, optional): the cordinates of alttice. Defaults to None.
+        """
         if coords is None:
             coords = self.unit_cell
             
@@ -109,6 +143,7 @@ class BravaisLattice():
             )
         )])
         
+        # Axis names
         fig.update_layout(
             scene=dict(
                 xaxis=dict(title='X'),
@@ -117,8 +152,17 @@ class BravaisLattice():
             )
         )
         fig.show()
-    
+
     def add_edge_trace(self, fig, edges, line_color='grey', line_width=10, dash='solid'):
+        """adds the edges to the plot
+
+        Args:
+            fig (plotly figure): the figure to add the edges to
+            edges (list): the edges to add to the plot
+            line_color (string, optional): color of the edges. Defaults to 'grey'.
+            line_width (float, optional): width of the line. Defaults to 10.
+            dash (string, optional): looks for the edge lines. Defaults to 'solid'.
+        """
         for edge in edges:
             x_line = [self.unit_cell[edge[0], 0], self.unit_cell[edge[1], 0]]
             y_line = [self.unit_cell[edge[0], 1], self.unit_cell[edge[1], 1]]
@@ -134,6 +178,14 @@ class BravaisLattice():
             ))
 
     def draw_fancy_unitcell(self, show = True, save_image = False, fig_height = 1200, fig_width = 1500):
+        """draw the fancy unit cell, with edges and vertices
+
+        Args:
+            show (boolean, optional): to shw the figrue or not. Defaults to True.
+            save_image (boolean, optional): to save the image or not. Defaults to False.
+            fig_height (int, optional): hieght of figure. Defaults to 1200.
+            fig_width (int, optional): width of figure. Defaults to 1500.
+        """
         if self.gamma == 120 and self.alpha == 90 and self.beta == 90:
             # need to switch things to make it look pretty
             self.gamma = 90
@@ -182,7 +234,8 @@ class BravaisLattice():
             mid_ab_edge = [[0, 6], [1, 7], [2, 4], [3, 5]]
             mid_ac_edge = [[0, 5], [1, 4], [2, 7], [3, 6]]
             mid_bc_edge = [[0, 3], [1, 2], [4, 7], [5, 6]]
-
+            
+            # Adds the mid points
             if self.all_faces:
                 self.add_edge_trace(fig, mid_ab_edge + mid_ac_edge + mid_bc_edge, line_width=5, dash='dash')
             elif self.mid_ab:
@@ -233,7 +286,17 @@ class BravaisLattice():
             fig.write_image(f"lattice_images/{self.name}.png")
 
 class PresistentHomologyFeatures():
+    """Class to create the persistent homology features of a structure
+    Functions, compute_persistence_diagrams, make_pipeline, featurising_coords were adapted from Ella Gales G and T repo.
+    Functions diagram_manipulation, plot_presistent_diagrams, plot_barcode_plots are adapted from Giotto-TDA.
+    """
     def __init__(self, coords, name = "structure"):
+        """Initialises the class
+
+        Args:
+            coords (list): list of coordinates of the structure
+            name (string, optional): name to save files as. Defaults to "structure".
+        """
         if isinstance(coords, list):
             self.list_of_coords = coords
         if isinstance(coords, np.ndarray):
@@ -242,6 +305,15 @@ class PresistentHomologyFeatures():
         self.name = name
         
     def compute_persistence_diagrams(self, coords = None, n_jobs = 1):
+        """computes the persistence diagrams of the structure
+
+        Args:
+            coords (list, optional): coordinates of structure. Defaults to None.
+            n_jobs (int, optional): the number of CPUs to run the code on. Defaults to 1.
+
+        Returns:
+            np.array: persistence diagrams
+        """
         # Track H0, H1, H2: connections, 1d voids and 2d voids
         homology_dimensions = [0, 1, 2]
 
@@ -263,21 +335,25 @@ class PresistentHomologyFeatures():
         return diagrams_basic
     
     def make_pipeline(self):
+        """makes the pipeline for the topological features
 
+        Returns:
+            pipe: pipeline for the topological features
+        """
+        # Define the metrics to be used for the topological features
         metrics = [
             {"metric": metric}
             for metric in ["bottleneck", "wasserstein", "landscape", "persistence_image"]
         ]
 
-        # Concatenate to generate 3 + 3 + (4 x 3) = 18 topological features
+        # 3 features made for each metric, 1 for each homology dimension
         feature_union = make_union(
             PersistenceEntropy(normalize=True),
             NumberOfPoints(n_jobs=1),
             *[Amplitude(**metric, n_jobs=1) for metric in metrics]
         )
-
-        ## then we use a pipeline to transform, the data and spit i out
-        # mwah hahahahaha
+        
+        # Create the pipeline
         pipe = Pipeline(
             [
                 ("features", feature_union)
@@ -287,6 +363,11 @@ class PresistentHomologyFeatures():
         return pipe
 
     def featurising_coords(self):
+        """featurises the coordinates of the structure
+
+        Returns:
+            np.array and list: matrix of topological features and list of topological features
+        """
         topol_feat_list = []
         pipe = self.make_pipeline()
 
@@ -302,6 +383,11 @@ class PresistentHomologyFeatures():
         return topol_feat_mat, topol_feat_list
     
     def diagram_manipulation(self):
+        """manipulates the diagram to get the birth-death pairs
+
+        Returns:
+            diagram manipulated: the diagram with the birth-death pairs and max and min values
+        """
         # Extracts the first diagram
         diagram = self.diagrams_basic[0]
         
@@ -319,11 +405,15 @@ class PresistentHomologyFeatures():
         
         return diagram, birth_death_pairs, max_val, min_val
         
-    def plot_presistent_diagrams(self, 
-                                 show = True,
-                                 save_image = False,
-                                 shift_annotation_x = [[25, 25, 25],[25,25,25],[25]], 
-                                 shift_annotation_y = [[17, 17,17],[17, 17,17],[17]]):
+    def plot_presistent_diagrams(self, show = True, save_image = False,shift_annotation_x = [[25, 25, 25],[25,25,25],[25]], shift_annotation_y = [[17, 17,17],[17, 17,17],[17]]):
+        """plots the persistent diagrams
+
+        Args:
+            show (bool, optional): shows the figure. Defaults to True.
+            save_image (bool, optional): saves the image if true. Defaults to False.
+            shift_annotation_x (list, optional): lists to shift each annoted feature in the x axis. Defaults to [[25, 25, 25],[25,25,25],[25]].
+            shift_annotation_y (list, optional): lists to shift the annotation for each feature in the y axis. Defaults to [[17, 17,17],[17, 17,17],[17]].
+        """
         
         diagram, birth_death_pairs, max_val, min_val = self.diagram_manipulation()
         
@@ -449,6 +539,12 @@ class PresistentHomologyFeatures():
             fig.write_image(f"PHF_images/{self.name}.png", width=500, height=500, scale=3)
         
     def plot_barcode_plots(self, show = True, save_image = False,):
+        """plots the barcode plots
+
+        Args:
+            show (bool, optional): shows the figure. Defaults to True.
+            save_image (bool, optional): save the image if true. Defaults to False.
+        """
         _, birth_death_pairs, max_val, min_val = self.diagram_manipulation()
 
         x_left = birth_death_pairs[:, 0]
@@ -531,6 +627,17 @@ class PresistentHomologyFeatures():
             
 class randomforests():
     def __init__(self, df, features, target, test_size = 0.2, random_state = 42, name = "model", stratify = False):
+        """Initialises the class
+
+        Args:
+            df (_type_): dataframe
+            features (list): list of string of the column names to be uysed as the features
+            target (string): name of column to be target
+            test_size (float, optional): size of test set to be used. Defaults to 0.2.
+            random_state (int, optional): the random state to be used in the random forests, if set to none will use none. Defaults to 42.
+            name (string, optional): name of plots to be saved as. Defaults to "model".
+            stratify (bool, optional): for classification models set to stratify to enable the model to evenly pick out each class for thr test set. Defaults to False.
+        """
         self.df = df
         self.features = features
         self.target = target
@@ -538,12 +645,20 @@ class randomforests():
         self.random_state = random_state
         self.name = name
         self.stratify = stratify
+        
+        # creates test abd training set from data
         self.X_train, self.X_test, self.y_train, self.y_test = self.split_data()
         
     def split_data(self):
+        """splits the data into test and training sets
+
+        Returns:
+            test and traing sets : X_train, X_test, y_train, y_test
+        """
         X = self.df[self.features]
         y = self.df[self.target]
         
+        # if stratify is set to true, the model will evenly pick out each class for the test set ONLY FOR CLASSIFICATION MODELS
         if self.stratify:
             X_train, X_test, y_train, y_test = train_test_split(X, y, 
                                                                 test_size=self.test_size, random_state=self.random_state,
@@ -555,6 +670,17 @@ class randomforests():
         return X_train, X_test, y_train, y_test
     
     def train_classifier_model(self, n_estimators = 100,  max_depth=5, min_samples_leaf=1, min_samples_split=2):
+        """trains a classifier model
+
+        Args:
+            n_estimators (int, optional): number of trees. Defaults to 100.
+            max_depth (int, optional): maximum deapth of the trees. Defaults to 5.
+            min_samples_leaf (int, optional): minimum data points on each leaf. Defaults to 1.
+            min_samples_split (int, optional): minimum data points on the leaf to split. Defaults to 2.
+
+        Returns:
+            rf: the fitted model
+        """
         rf = RandomForestClassifier(n_estimators=n_estimators,
                                     max_depth=max_depth, 
                                     min_samples_leaf=min_samples_leaf,
@@ -566,6 +692,17 @@ class randomforests():
         return rf
     
     def train_regressor_model(self, n_estimators = 100,  max_depth=5, min_samples_leaf=1, min_samples_split=2):
+        """trains a regressor model
+
+        Args:
+            n_estimators (int, optional): number of trees. Defaults to 100.
+            max_depth (int, optional): maximum deapth of the trees. Defaults to 5.
+            min_samples_leaf (int, optional): minimum data points on each leaf. Defaults to 1.
+            min_samples_split (int, optional): minimum data points on the leaf to split. Defaults to 2.
+
+        Returns:
+            rf: the fitted model
+        """
         rf = RandomForestRegressor(n_estimators=n_estimators,
                                     max_depth=max_depth, 
                                     min_samples_leaf=min_samples_leaf,
@@ -576,13 +713,24 @@ class randomforests():
         
         return rf
 
-    def train_regressor_model_grid_search(self, cv = 10, scoring = 'neg_mean_squared_error',
+    def train_regressor_model_grid_search(self, cv = 10, scoring = 'neg_mean_squared_error', 
                                           param_grid = {
                                               'n_estimators': [50, 100, 150],
                                               'max_depth': [None, 10, 20],
                                               'min_samples_split': [2, 5, 10],
                                               'min_samples_leaf': [1, 2, 4],
                                               'max_features': ['log2', 'sqrt']}):
+        
+        """trains a regressor model using grid search
+        
+        Args:
+            cv (int, optional): number of cross validations. Defaults to 10.
+            scoring (string, optional): scoring method. Defaults to 'neg_mean_squared_error'.
+            param_grid (dict, optional): paramaters to be used in the grid search.
+
+        Returns:
+            model and paramaters: the best model and the best paramaters
+        """
         
         rf = RandomForestRegressor(random_state=self.random_state)
         grid_search = GridSearchCV(rf, param_grid, cv=cv, scoring=scoring)
@@ -591,6 +739,15 @@ class randomforests():
         return grid_search.best_estimator_, grid_search.best_params_
     
     def evaluate_regressor_model(self, model):
+        """`evaluates the regressor model
+
+        Args:
+            model (model): the model to be evaluated
+
+        Returns:
+            evaluation metrics: mean absolute error, mean squared error, r2 score
+        """
+        
         y_pred = model.predict(self.X_test)
         
         mae = mean_absolute_error(self.y_test, y_pred)
@@ -600,6 +757,14 @@ class randomforests():
         return mae, mse, r2
     
     def evaluate_classifier_model(self, model):
+        """evaluates the classifier model
+
+        Args:
+            model (model): the model to be evaluated
+
+        Returns:
+            evaluation metrics: accuracy, f1, precision, recall, confusion matrix
+        """
         y_pred = model.predict(self.X_test)
         
         accuracy = accuracy_score(self.y_test, y_pred)
@@ -611,11 +776,31 @@ class randomforests():
         return accuracy, f1, precision, recall, conf_matrix
     
     def calc_cross_val_score(self, model, cv = 5, scoring = 'accuracy'):
+        """calculates the cross validation score
+
+        Args:
+            model (_type_): the model to be used
+            cv (int, optional): number of folds to implement. Defaults to 5.
+            scoring (str, optional): scoring value. Defaults to 'accuracy'.
+
+        Returns:
+            scores: a list of cross validation scores
+        """
         scores = cross_val_score(model, self.X_train, self.y_train, cv=cv, scoring=scoring)
         
         return scores
     
     def plot_confusion_matrix(self, target_names, conf_matrix, show = True, save_image = False, width = 800, height = 600):
+        """plots the confusion matrix
+
+        Args:
+            target_names (list): names of target values 
+            conf_matrix (matrix): the confusion matrix 
+            show (bool, optional): show the plot Defaults to True.
+            save_image (bool, optional): save the plot as a png. Defaults to False.
+            width (int, optional): width of plot. Defaults to 800.
+            height (int, optional): height of plot. Defaults to 600.
+        """
         heatmap = go.Heatmap(z=conf_matrix,
                              x=target_names,
                              y=target_names,
@@ -645,6 +830,16 @@ class randomforests():
             fig.write_image(f"plots/conf_matrix_{self.name}.png", width=width, height=height, scale=3)
             
     def plot_feature_importance(self, importances ,show = True, save_image = False, width = 800, height = 600):
+        """plots the feature importance
+
+        Args:
+            importances (_type_): the feature importances
+            show (bool, optional): to show the figure or not. Defaults to True.
+            save_image (bool, optional): to save th image or not. Defaults to False.
+            width (int, optional): width of figure. Defaults to 800.
+            height (int, optional): height of figure. Defaults to 600.
+        """
+        
         # Get the feature names
         feature_names = [name.replace('_', ' ') for name in self.features]
 
